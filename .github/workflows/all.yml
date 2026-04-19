@@ -288,7 +288,7 @@ jobs:
       #     user: __token__
       #     password: ${{ secrets.PYPI_API_TOKEN }}
       - name: Debug listing
-        run: ls -aT
+        run: ls
       - name: Release
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'release' && github.event.action == 'published'
