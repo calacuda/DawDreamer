@@ -8,6 +8,8 @@ jobs:
 
   build-ubuntu:
     runs-on: ubuntu-22.04
+    # permissions:
+    #   contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -76,6 +78,16 @@ jobs:
         name: artifact-${{ matrix.cibwbuild}}
         path: ./wheelhouse/*.whl
 
+    # - name: Release
+    #   uses: softprops/action-gh-release@v2
+    #   if: github.event_name == 'release' && github.event.action == 'published'
+    #   with:
+    #     files: |
+    #       build/executable.exe
+    #       build/*.zip
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-ubuntu-docker:
     runs-on: ubuntu-22.04
     steps:
@@ -88,6 +100,8 @@ jobs:
 
   build-windows:
     runs-on: ${{ matrix.os }}
+    # permissions:
+    #   contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -154,8 +168,20 @@ jobs:
         name: artifact-windows-${{ matrix.python-version}}
         path: ./wheelhouse/*.whl
 
+    # - name: Release
+    #   uses: softprops/action-gh-release@v2
+    #   if: github.event_name == 'release' && github.event.action == 'published'
+    #   with:
+    #     files: |
+    #       build/executable.exe
+    #       build/*.zip
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-macos:
     runs-on: ${{ matrix.os }}
+    # permissions:
+    #   contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -216,10 +242,39 @@ jobs:
         name: artifact-macos-${{ matrix.build}}
         path: ./wheelhouse/*.whl
 
-  upload-pypi:
+    # - name: Release
+    #   uses: softprops/action-gh-release@v2
+    #   if: github.event_name == 'release' && github.event.action == 'published'
+    #   with:
+    #     files: |
+    #       build/executable.exe
+    #       build/*.zip
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # upload-pypi:
+  #   needs: [build-windows, build-ubuntu, build-macos]
+  #   runs-on: ubuntu-latest
+  #   name: "Upload wheels to PyPI"
+  #   if: github.event_name == 'release' && github.event.action == 'published'
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         pattern: artifact-*
+  #         merge-multiple: true
+  #         path: dist
+  #
+  #     - uses: pypa/gh-action-pypi-publish@release/v1
+  #       with:
+  #         user: __token__
+  #         password: ${{ secrets.PYPI_API_TOKEN }}
+
+  upload-to-releases:
     needs: [build-windows, build-ubuntu, build-macos]
     runs-on: ubuntu-latest
-    name: "Upload wheels to PyPI"
+    permissions:
+      contents: write
+    name: "Upload wheels to gh release"
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - uses: actions/download-artifact@v4
@@ -228,7 +283,16 @@ jobs:
           merge-multiple: true
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      # - uses: pypa/gh-action-pypi-publish@release/v1
+      #   with:
+      #     user: __token__
+      #     password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Debug listing
+        run: ls -aT
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'release' && github.event.action == 'published'
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
